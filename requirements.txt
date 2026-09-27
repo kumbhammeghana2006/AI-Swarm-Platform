@@ -4,3 +4,6 @@ langgraph
 openai
 python-dotenv
 huggingface_hub
+sqlalchemy
+pyjwt
+httpx
