@@ -31,6 +31,9 @@ def classifier_node(state: SwarmState) -> Dict[str, Any]:
     """Classifies user task into one of 5 supported categories, or uses explicit override_type if set."""
     task = state.get("task", "")
     existing_type = state.get("task_type")
+    agents = list(state.get("agents_used") or [])
+    if "Classifier" not in agents:
+        agents.append("Classifier")
 
     # If override_type was provided and valid, skip LLM classification
     if existing_type in VALID_TASK_TYPES:
@@ -39,6 +42,7 @@ def classifier_node(state: SwarmState) -> Dict[str, Any]:
         return {
             "task_type": existing_type,
             "iteration_count": 0,
+            "agents_used": agents,
             "logs": logs
         }
     
@@ -67,6 +71,7 @@ def classifier_node(state: SwarmState) -> Dict[str, Any]:
     return {
         "task_type": selected_type,
         "iteration_count": 0,
+        "agents_used": agents,
         "logs": logs
     }
 
@@ -75,11 +80,16 @@ def planner_node(state: SwarmState) -> Dict[str, Any]:
     task = state.get("task", "")
     plan = planner_agent.create_plan(task)
     
+    agents = list(state.get("agents_used") or [])
+    if "Planner" not in agents:
+        agents.append("Planner")
+        
     logs = state.get("logs", [])
     logs.append("[Planner Node] Created step-by-step execution plan.")
     
     return {
         "plan": plan,
+        "agents_used": agents,
         "logs": logs
     }
 
@@ -89,12 +99,17 @@ def researcher_node(state: SwarmState) -> Dict[str, Any]:
     plan = state.get("plan", "")
     res = researcher_agent.research(task, plan)
     
+    agents = list(state.get("agents_used") or [])
+    if "Researcher" not in agents:
+        agents.append("Researcher")
+        
     logs = state.get("logs", [])
     logs.append("[Researcher Node] Completed research & local RAG context retrieval.")
     
     return {
         "research_notes": res["research_notes"],
         "rag_context": res["rag_context"],
+        "agents_used": agents,
         "logs": logs
     }
 
@@ -114,12 +129,17 @@ def coder_node(state: SwarmState) -> Dict[str, Any]:
         iteration=current_iter
     )
     
+    agents = list(state.get("agents_used") or [])
+    if "Coder" not in agents:
+        agents.append("Coder")
+        
     logs = state.get("logs", [])
     logs.append(f"[Coder Node] Generated code (Iteration #{current_iter}).")
     
     return {
         "code": code,
         "iteration_count": current_iter,
+        "agents_used": agents,
         "logs": logs
     }
 
@@ -134,6 +154,10 @@ def tester_node(state: SwarmState) -> Dict[str, Any]:
         
     res = tester_agent.test_code(task, code)
     
+    agents = list(state.get("agents_used") or [])
+    if "Tester" not in agents:
+        agents.append("Tester")
+        
     logs = state.get("logs", [])
     logs.append(f"[Tester Node] Test outcome: Passed={res['passed_tests']}.")
     
@@ -141,6 +165,7 @@ def tester_node(state: SwarmState) -> Dict[str, Any]:
         "passed_tests": res["passed_tests"],
         "test_results": res["test_results"],
         "feedback": res["feedback"],
+        "agents_used": agents,
         "logs": logs
     }
 
@@ -152,11 +177,16 @@ def reviewer_node(state: SwarmState) -> Dict[str, Any]:
     
     review_notes = reviewer_agent.review(task, code, test_results)
     
+    agents = list(state.get("agents_used") or [])
+    if "Reviewer" not in agents:
+        agents.append("Reviewer")
+        
     logs = state.get("logs", [])
     logs.append("[Reviewer Node] Conducted code review.")
     
     return {
         "review_notes": review_notes,
+        "agents_used": agents,
         "logs": logs
     }
 
@@ -176,11 +206,16 @@ def documentation_node(state: SwarmState) -> Dict[str, Any]:
         rag_context=rag_context
     )
     
+    agents = list(state.get("agents_used") or [])
+    if "Documentation" not in agents:
+        agents.append("Documentation")
+        
     logs = state.get("logs", [])
     logs.append("[Documentation Node] Generated documentation.")
     
     return {
         "documentation": docs,
+        "agents_used": agents,
         "logs": logs
     }
 
@@ -335,6 +370,7 @@ def run_swarm(task: str, override_type: str = None) -> SwarmState:
 
     initial_state: SwarmState = {
         "task": task,
+        "agents_used": [],
         "logs": [f"[Swarm Engine] Starting workflow for task: '{task}'"]
     }
     if override_type:

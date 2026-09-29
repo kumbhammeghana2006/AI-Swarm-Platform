@@ -492,6 +492,27 @@
   margin-top: 8px;
 }
 
+.output-code-block.failed-output {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.06);
+  color: #f87171;
+}
+
+.result-section.failed-notice {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+
+.failed-notice-text {
+  margin: 0;
+  font-size: 14px;
+  color: #f87171;
+  line-height: 1.5;
+}
+
+
 /* History Card & List */
 .history-card {
   background: var(--code-bg);

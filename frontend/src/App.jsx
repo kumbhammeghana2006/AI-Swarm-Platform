@@ -229,10 +229,34 @@ function App() {
                       <span className="meta-value">{formatDate(taskResult.created_at)}</span>
                     </div>
                     {taskResult.result && (
-                      <div className="meta-item">
-                        <span className="meta-label">Iterations:</span>
-                        <span className="meta-value">{taskResult.result.iteration_count}</span>
-                      </div>
+                      <>
+                        <div className="meta-item">
+                          <span className="meta-label">Config:</span>
+                          <span className="meta-value">{taskResult.result.configuration_type || 'multi_agent'}</span>
+                        </div>
+                        {taskResult.result.execution_time_seconds != null && (
+                          <div className="meta-item">
+                            <span className="meta-label">Duration:</span>
+                            <span className="meta-value">{taskResult.result.execution_time_seconds.toFixed(2)}s</span>
+                          </div>
+                        )}
+                        <div className="meta-item">
+                          <span className="meta-label">Iterations:</span>
+                          <span className="meta-value">{taskResult.result.iteration_count}</span>
+                        </div>
+                        {taskResult.result.tester_result && (
+                          <div className="meta-item">
+                            <span className="meta-label">Tester:</span>
+                            <span className="meta-value">{taskResult.result.tester_result}</span>
+                          </div>
+                        )}
+                        {Array.isArray(taskResult.result.agents_used) && taskResult.result.agents_used.length > 0 && (
+                          <div className="meta-item" style={{ flexBasis: '100%' }}>
+                            <span className="meta-label">Agents Used ({taskResult.result.agents_used.length}):</span>
+                            <span className="meta-value">{taskResult.result.agents_used.join(', ')}</span>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -249,7 +273,14 @@ function App() {
                           {taskResult.result.execution_status}
                         </span>
                       </div>
-                      <pre className="output-code-block">
+                      {taskResult.status === 'FAILED' && (
+                        <div className="result-section failed-notice">
+                          <p className="failed-notice-text">
+                            ⚠️ Task execution completed with failure status. Swarm LLM inference may be rate limited or unavailable.
+                          </p>
+                        </div>
+                      )}
+                      <pre className={`output-code-block ${taskResult.result.execution_status === 'FAILED' ? 'failed-output' : ''}`}>
                         {taskResult.result.final_output || 'No output returned.'}
                       </pre>
                     </div>
@@ -287,9 +318,17 @@ function App() {
                         {task.result && (
                           <details className="history-details">
                             <summary className="history-summary font-semibold">
-                              View Output ({task.result.execution_status} - {task.result.iteration_count} iteration{task.result.iteration_count !== 1 ? 's' : ''})
+                              View Output ({task.result.execution_status} · {task.result.iteration_count} iter{task.result.iteration_count !== 1 ? 's' : ''}
+                              {task.result.execution_time_seconds != null ? ` · ${task.result.execution_time_seconds.toFixed(2)}s` : ''}
+                              {task.result.tester_result ? ` · Test: ${task.result.tester_result}` : ''}
+                              {task.result.configuration_type ? ` · ${task.result.configuration_type}` : ''})
                             </summary>
-                            <pre className="output-code-block snippet">
+                            {Array.isArray(task.result.agents_used) && task.result.agents_used.length > 0 && (
+                              <div style={{ margin: '6px 0 8px 0', fontSize: '13px', color: 'var(--text)' }}>
+                                <strong style={{ color: 'var(--text-h)' }}>Agents:</strong> {task.result.agents_used.join(', ')}
+                              </div>
+                            )}
+                            <pre className={`output-code-block snippet ${task.result.execution_status === 'FAILED' ? 'failed-output' : ''}`}>
                               {task.result.final_output || 'No output returned.'}
                             </pre>
                           </details>

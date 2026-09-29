@@ -32,7 +32,8 @@ def create_task(
         db=db,
         user=current_user,
         task_text=task_input.task_text,
-        task_type=task_input.task_type
+        task_type=task_input.task_type,
+        configuration_type=task_input.configuration_type or "multi_agent"
     )
     return task
 

@@ -251,5 +251,68 @@ class TestPhase2Backend(unittest.TestCase):
         self.assertEqual(resp_admin.status_code, 200)
         self.assertGreaterEqual(len(resp_admin.json()), 1)
 
+    @patch("backend.services.swarm_service.run_swarm")
+    def test_task_execution_llm_failure_handling(self, mock_run_swarm):
+        """Test task creation handles LLM failures cleanly and persists FAILED status."""
+        mock_run_swarm.side_effect = RuntimeError("LLM request failed. Please check network or HF_TOKEN permissions.")
+
+        # Register and login user
+        self.client.post("/auth/register", json={
+            "username": "failuser",
+            "email": "fail@example.com",
+            "password": "password123"
+        })
+        login_res = self.client.post("/auth/login", json={
+            "username": "failuser",
+            "password": "password123"
+        }).json()
+        token = login_res["access_token"]
+
+        headers = {"Authorization": f"Bearer {token}"}
+        task_payload = {"task_text": "Task expecting failure"}
+        response = self.client.post("/tasks", json=task_payload, headers=headers)
+
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertEqual(data["task_text"], "Task expecting failure")
+        self.assertEqual(data["status"], "FAILED")
+        self.assertIsNotNone(data["result"])
+        self.assertEqual(data["result"]["execution_status"], "FAILED")
+        self.assertIn("LLM inference service is currently unavailable or rate limited", data["result"]["final_output"])
+
+    @patch("backend.services.swarm_service.run_swarm")
+    def test_task_history_stores_both_completed_and_failed_statuses(self, mock_run_swarm):
+        """Test task history correctly stores and returns both COMPLETED and FAILED task statuses."""
+        mock_run_swarm.side_effect = [
+            {
+                "task": "Successful task",
+                "task_type": "code_only",
+                "final_output": "Success result",
+                "iteration_count": 1,
+                "logs": []
+            },
+            RuntimeError("Rate limit exceeded")
+        ]
+
+        self.client.post("/auth/register", json={"username": "mixeduser", "email": "mixed@ex.com", "password": "pass"})
+        token = self.client.post("/auth/login", json={"username": "mixeduser", "password": "pass"}).json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 1. Create successful task
+        self.client.post("/tasks", json={"task_text": "Successful task"}, headers=headers)
+        # 2. Create failed task
+        self.client.post("/tasks", json={"task_text": "Failing task"}, headers=headers)
+
+        # 3. Retrieve history
+        resp = self.client.get("/tasks", headers=headers)
+        self.assertEqual(resp.status_code, 200)
+        history = resp.json()
+        self.assertEqual(len(history), 2)
+
+        statuses = [t["status"] for t in history]
+        self.assertIn("COMPLETED", statuses)
+        self.assertIn("FAILED", statuses)
+
 if __name__ == "__main__":
     unittest.main()
+

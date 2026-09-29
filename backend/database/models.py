@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, JSON
 from sqlalchemy.orm import relationship
 from backend.database.connection import Base
 
@@ -34,8 +34,16 @@ class TaskResult(Base):
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False, unique=True, index=True)
     final_output = Column(Text, nullable=True)
+
+    # Evaluation Metrics
     execution_status = Column(String, nullable=False)  # "SUCCESS" or "FAILED"
     iteration_count = Column(Integer, default=1, nullable=False)
+    execution_time_seconds = Column(Float, nullable=True)
+    tester_result = Column(String, nullable=True)  # "PASS", "FAIL", "N/A"
+    agents_used = Column(JSON, nullable=True)  # E.g. ["Classifier", "Planner", "Coder", ...]
+    configuration_type = Column(String, default="multi_agent", nullable=False)  # "multi_agent" or "single_agent"
+
+    # Metadata
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     task = relationship("Task", back_populates="result")

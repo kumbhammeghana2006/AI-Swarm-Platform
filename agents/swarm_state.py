@@ -17,4 +17,5 @@ class SwarmState(TypedDict, total=False):
     review_notes: str
     documentation: str
     final_output: str
+    agents_used: List[str]
     logs: List[str]

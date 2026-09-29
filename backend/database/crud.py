@@ -39,10 +39,12 @@ def create_task(db: Session, user_id: int, task_text: str, task_type: Optional[s
     db.refresh(db_task)
     return db_task
 
-def update_task_status(db: Session, task_id: int, status: str) -> Optional[Task]:
+def update_task_status(db: Session, task_id: int, status: str, task_type: Optional[str] = None) -> Optional[Task]:
     task = db.query(Task).filter(Task.id == task_id).first()
     if task:
         task.status = status
+        if task_type and not task.task_type:
+            task.task_type = task_type
         db.commit()
         db.refresh(task)
     return task
@@ -52,13 +54,21 @@ def create_task_result(
     task_id: int,
     final_output: str,
     execution_status: str,
-    iteration_count: int
+    iteration_count: int,
+    execution_time_seconds: Optional[float] = None,
+    tester_result: Optional[str] = None,
+    agents_used: Optional[List[str]] = None,
+    configuration_type: str = "multi_agent"
 ) -> TaskResult:
     result = TaskResult(
         task_id=task_id,
         final_output=final_output,
         execution_status=execution_status,
-        iteration_count=iteration_count
+        iteration_count=iteration_count,
+        execution_time_seconds=execution_time_seconds,
+        tester_result=tester_result,
+        agents_used=agents_used,
+        configuration_type=configuration_type
     )
     db.add(result)
     db.commit()
