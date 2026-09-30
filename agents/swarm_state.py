@@ -19,3 +19,8 @@ class SwarmState(TypedDict, total=False):
     final_output: str
     agents_used: List[str]
     logs: List[str]
+    # Evaluation and ablation metrics fields
+    configuration_type: str
+    execution_time_seconds: float
+    tester_result: str
+

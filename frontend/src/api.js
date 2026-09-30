@@ -158,3 +158,78 @@ export async function fetchUserTasks(token) {
   }
 }
 
+/**
+ * Retrieves empirical evaluation metrics summary from backend /tasks/metrics/summary.
+ * @param {string} token
+ * @returns {Promise<Object>}
+ */
+export async function fetchMetricsSummary(token) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tasks/metrics/summary`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+
+    const data = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new ApiError('Session expired or invalid authentication token. Please log in again.', 401)
+      }
+      const detail = data.detail || 'Failed to retrieve evaluation metrics.'
+      const message = typeof detail === 'string' ? detail : JSON.stringify(detail)
+      throw new ApiError(message, response.status)
+    }
+
+    return data
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error
+    }
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new ApiError('Unable to connect to metrics server. Please ensure backend is running at http://localhost:8000.', 500)
+    }
+    throw new ApiError(error.message || 'An unexpected error occurred while fetching metrics.', 500)
+  }
+}
+
+/**
+ * Retrieves registered benchmark experiment and ablation configurations from backend.
+ * @param {string} token
+ * @returns {Promise<Array<Object>>}
+ */
+export async function fetchExperimentConfigs(token) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tasks/experiments/configurations`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+
+    const data = await response.json().catch(() => ([]))
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new ApiError('Session expired or invalid authentication token. Please log in again.', 401)
+      }
+      const detail = data.detail || 'Failed to retrieve experiment configurations.'
+      const message = typeof detail === 'string' ? detail : JSON.stringify(detail)
+      throw new ApiError(message, response.status)
+    }
+
+    return data
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error
+    }
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new ApiError('Unable to connect to experiment server. Please ensure backend is running at http://localhost:8000.', 500)
+    }
+    throw new ApiError(error.message || 'An unexpected error occurred while fetching experiment configurations.', 500)
+  }
+}
+
+

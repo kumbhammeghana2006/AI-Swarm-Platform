@@ -90,3 +90,32 @@ class TaskResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- Phase 4 Evaluation & Benchmark Metrics Schemas ---
+
+class MetricsSummaryResponse(BaseModel):
+    total_tasks: int
+    successful_tasks: int
+    failed_tasks: int
+    success_rate: float
+    avg_execution_time_seconds: float
+    avg_iteration_count: float
+    tester_pass_count: int
+    tester_fail_count: int
+    tester_na_count: int
+    tester_pass_rate: float
+    tester_fail_rate: float
+    agent_usage_frequency: dict
+    task_type_distribution: dict
+    configuration_distribution: dict
+    scope: str = "user"
+
+class ExperimentConfigResponse(BaseModel):
+    name: str
+    configuration_type: str
+    rag_enabled: bool
+    self_correction_enabled: bool
+    multi_agent: bool
+    is_executable: bool
+    description: str
+

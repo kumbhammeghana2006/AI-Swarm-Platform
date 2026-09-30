@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import AuthForm from './components/AuthForm'
-import { submitTask, fetchUserTasks, ApiError } from './api'
+import MetricsDashboard from './components/MetricsDashboard'
+import { submitTask, fetchUserTasks, fetchMetricsSummary, ApiError } from './api'
 import './App.css'
 
 function App() {
@@ -10,7 +11,9 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [taskResult, setTaskResult] = useState(null)
   const [taskHistory, setTaskHistory] = useState([])
+  const [metricsSummary, setMetricsSummary] = useState(null)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
   const handleLogout = useCallback(() => {
@@ -19,9 +22,23 @@ function App() {
     setTaskInput('')
     setTaskResult(null)
     setTaskHistory([])
+    setMetricsSummary(null)
     setErrorMessage('')
     localStorage.removeItem('swarm_token')
     localStorage.removeItem('swarm_username')
+  }, [])
+
+  const loadMetricsSummary = useCallback(async (authToken) => {
+    if (!authToken) return
+    setIsLoadingMetrics(true)
+    try {
+      const summary = await fetchMetricsSummary(authToken)
+      setMetricsSummary(summary)
+    } catch (err) {
+      console.error('Failed to load metrics summary:', err.message)
+    } finally {
+      setIsLoadingMetrics(false)
+    }
   }, [])
 
   const loadTaskHistory = useCallback(async (authToken) => {
@@ -30,6 +47,7 @@ function App() {
     try {
       const history = await fetchUserTasks(authToken)
       setTaskHistory(history)
+      await loadMetricsSummary(authToken)
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         handleLogout()
@@ -40,7 +58,7 @@ function App() {
     } finally {
       setIsLoadingHistory(false)
     }
-  }, [handleLogout])
+  }, [handleLogout, loadMetricsSummary])
 
   useEffect(() => {
     let isCancelled = false
@@ -62,6 +80,18 @@ function App() {
             }
           }
         })
+
+      fetchMetricsSummary(token)
+        .then((summary) => {
+          if (!isCancelled) {
+            setMetricsSummary(summary)
+          }
+        })
+        .catch((err) => {
+          if (!isCancelled) {
+            console.error('Failed to load initial metrics:', err.message)
+          }
+        })
     } else {
       localStorage.removeItem('swarm_token')
     }
@@ -69,6 +99,7 @@ function App() {
       isCancelled = true
     }
   }, [token, handleLogout])
+
 
   useEffect(() => {
     if (username) {
@@ -287,6 +318,13 @@ function App() {
                   )}
                 </div>
               )}
+
+              {/* Evaluation & Research Metrics Section */}
+              <MetricsDashboard
+                metrics={metricsSummary}
+                isLoading={isLoadingMetrics}
+                onRefresh={() => loadMetricsSummary(token)}
+              />
 
               {/* Task History Section */}
               <div className="history-card">

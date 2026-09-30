@@ -119,6 +119,9 @@ def coder_node(state: SwarmState) -> Dict[str, Any]:
     plan = state.get("plan", "")
     research_notes = state.get("research_notes", "")
     feedback = state.get("feedback", "")
+    rag_context = state.get("rag_context", "")
+    previous_code = state.get("code", "")
+    test_results = state.get("test_results", "")
     current_iter = state.get("iteration_count", 0) + 1
     
     code = coder_agent.generate_code(
@@ -126,7 +129,10 @@ def coder_node(state: SwarmState) -> Dict[str, Any]:
         plan=plan,
         research_notes=research_notes,
         feedback=feedback,
-        iteration=current_iter
+        iteration=current_iter,
+        previous_code=previous_code,
+        test_results=test_results,
+        rag_context=rag_context
     )
     
     agents = list(state.get("agents_used") or [])
